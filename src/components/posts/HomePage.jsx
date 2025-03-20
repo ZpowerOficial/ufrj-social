@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import MainLayout from '../components/layout/MainLayout';
-import PostCard from '../components/posts/PostCard';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import MainLayout from '../layout/MainLayout';
+import PostCard from './PostCard';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function HomePage() {
   const { user } = useAuth();
