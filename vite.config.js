@@ -87,8 +87,8 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3000,
-    strictPort: true,
+    port: 3001, // Alterado de 3000 para 3001
+    strictPort: false, // Alterado para false para permitir buscar porta alternativa
     cors: true
   },
   preview: {
