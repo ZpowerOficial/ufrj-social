@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Detecta se está em modo de produção ou desenvolvimento
+const isProduction = process.env.NODE_ENV === 'production';
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -65,7 +68,8 @@ export default defineConfig({
       }
     })
   ],
-  base: '/ufrj-social/',
+  // Use base path apenas em produção para GitHub Pages
+  base: isProduction ? '/ufrj-social/' : '/',
   build: {
     outDir: 'dist',
     sourcemap: true,
@@ -87,8 +91,8 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3001, // Alterado de 3000 para 3001
-    strictPort: false, // Alterado para false para permitir buscar porta alternativa
+    port: 3004, // Porta configurada para 3004 como mostra seu screenshot
+    strictPort: false,
     cors: true
   },
   preview: {

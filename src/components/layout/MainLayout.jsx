@@ -12,11 +12,11 @@ export default function MainLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-slate-100">
       {/* Header */}
       <header className="bg-ufrj-blue text-white shadow-md">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <Link to="/" className="text-xl font-bold">UFRJ Social</Link>
+          <Link to="/" className="text-xl font-bold text-white">UFRJ Social</Link>
           
           <div className="flex items-center space-x-4">
             {user ? (
@@ -26,9 +26,9 @@ export default function MainLayout({ children }) {
                 </Link>
                 
                 <div className="relative group">
-                  <button className="flex items-center space-x-2">
+                  <button className="flex items-center space-x-2 text-white">
                     <div className="w-8 h-8 rounded-full bg-white text-ufrj-blue flex items-center justify-center">
-                      {profile?.display_name?.charAt(0) || user.email.charAt(0)}
+                      {profile?.display_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                     </div>
                     <span>{profile?.display_name || 'Usuário'}</span>
                   </button>
@@ -49,7 +49,7 @@ export default function MainLayout({ children }) {
               </>
             ) : (
               <>
-                <Link to="/login" className="hover:underline">Login</Link>
+                <Link to="/login" className="hover:underline text-white">Login</Link>
                 <Link to="/register" className="bg-white text-ufrj-blue px-3 py-1 rounded hover:bg-gray-100">
                   Cadastrar
                 </Link>
@@ -60,12 +60,12 @@ export default function MainLayout({ children }) {
       </header>
       
       {/* Main content */}
-      <main className="flex-grow container mx-auto px-4 py-6">
+      <main className="flex-grow container mx-auto px-4 py-6 bg-white shadow-md my-4 rounded-lg">
         {children}
       </main>
       
       {/* Footer */}
-      <footer className="bg-gray-100 border-t py-4">
+      <footer className="bg-gray-100 border-t py-4 mt-auto">
         <div className="container mx-auto px-4 text-center text-sm text-gray-600">
           <p>UFRJ Social © 2025 - Plataforma descentralizada da comunidade UFRJ</p>
           <p className="mt-1">Versão Beta</p>

@@ -27,10 +27,15 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+// Detectar se está no GitHub Pages ou em desenvolvimento local
+const isGitHubPages = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+// Base URL condicionalmente configurada
+const basename = isGitHubPages ? '/ufrj-social' : '';
+
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router basename={basename}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
