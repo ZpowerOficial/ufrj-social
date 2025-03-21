@@ -1,62 +1,87 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ThumbsUp, ThumbsDown, MessageSquare } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Share } from 'lucide-react';
+
+// Componentes de UI
+import { Avatar } from '../ui/avatar';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 
 export default function PostCard({ post }) {
-  // Função para formatar a data de criação para exibição
+  // Função para formatar a data de criação para exibição relativa (como "2h atrás")
   const formatDate = (timestamp) => {
     if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' }).format(
-      Math.round((date - new Date()) / (1000 * 60 * 60 * 24)),
-      'day'
-    );
+    
+    const now = new Date();
+    const postDate = new Date(timestamp);
+    const diffInSeconds = Math.floor((now - postDate) / 1000);
+    
+    if (diffInSeconds < 60) return `${diffInSeconds}s`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d`;
+    return postDate.toLocaleDateString();
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-4 mb-4">
-      <div className="flex items-start space-x-2">
-        <div className="w-8 h-8 rounded-full bg-ufrj-blue text-white flex items-center justify-center">
-          {post.author?.display_name?.charAt(0) || '?'}
-        </div>
-        
-        <div className="flex-1">
-          <div className="flex items-center text-sm text-gray-500">
-            <span className="font-medium text-gray-900">{post.author?.display_name || 'Usuário'}</span>
-            <span className="mx-1">•</span>
-            <span>{formatDate(post.created_at)}</span>
-            <span className="mx-1">•</span>
-            <Link to={`/community/${post.community?.slug}`} className="text-ufrj-blue hover:underline">
-              {post.community?.name || 'Comunidade'}
-            </Link>
+    <Card className="mb-4 hover:shadow-md transition-shadow">
+      <CardHeader className="flex flex-row items-start gap-4 p-4">
+        <Avatar>
+          <AvatarImage 
+            src={post.author?.avatar_url} 
+            alt={post.author?.display_name || 'Usuário'} 
+          />
+          <AvatarFallback>
+            {post.author?.display_name?.charAt(0) || '?'}
+          </AvatarFallback>
+        </Avatar>
+        <div className="grid gap-1">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">{post.author?.display_name || 'Usuário'}</span>
+            <span className="text-sm text-muted-foreground">@{post.author?.username || 'usuario'}</span>
+            <span className="text-sm text-muted-foreground">· {formatDate(post.created_at)}</span>
           </div>
-          
-          <Link to={`/post/${post.id}`}>
-            <h2 className="text-lg font-semibold mt-1 hover:text-ufrj-blue">{post.title}</h2>
+          <Link to={`/community/${post.community?.id}`} className="text-sm text-primary hover:underline">
+            r/{post.community?.name || 'Comunidade'}
           </Link>
-          
-          <div className="mt-2 text-gray-700 line-clamp-3">
-            {post.content}
-          </div>
-          
-          <div className="mt-3 flex items-center space-x-4 text-gray-500">
-            <button className="flex items-center space-x-1 hover:text-green-600">
-              <ThumbsUp size={16} />
-              <span>{post.upvotes || 0}</span>
-            </button>
-            
-            <button className="flex items-center space-x-1 hover:text-red-600">
-              <ThumbsDown size={16} />
-              <span>{post.downvotes || 0}</span>
-            </button>
-            
-            <Link to={`/post/${post.id}`} className="flex items-center space-x-1 hover:text-ufrj-blue">
-              <MessageSquare size={16} />
-              <span>{post.comment_count || 0} comentários</span>
-            </Link>
-          </div>
         </div>
-      </div>
-    </div>
+      </CardHeader>
+      
+      <CardContent className="p-4 pt-0">
+        <Link to={`/post/${post.id}`}>
+          <h2 className="text-lg font-semibold mt-1 hover:text-primary">{post.title}</h2>
+        </Link>
+        <div className="mt-2 text-gray-700">
+          {post.content}
+        </div>
+        {post.media && post.media.length > 0 && (
+          <div className="mt-4 rounded-lg overflow-hidden">
+            <img
+              src={post.media[0].url}
+              alt={post.title}
+              className="w-full object-cover max-h-80"
+            />
+          </div>
+        )}
+      </CardContent>
+      
+      <CardFooter className="flex items-center justify-between p-4 pt-0">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" className="flex items-center gap-1 text-muted-foreground hover:text-primary">
+            <ThumbsUp className="h-4 w-4" />
+            <span>{post.upvotes || 0}</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex items-center gap-1 text-muted-foreground hover:text-primary" asChild>
+            <Link to={`/post/${post.id}`}>
+              <MessageSquare className="h-4 w-4" />
+              <span>{post.comment_count || 0}</span>
+            </Link>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex items-center gap-1 text-muted-foreground hover:text-primary">
+            <Share className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
   );
 }
