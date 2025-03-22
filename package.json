@@ -20,14 +20,18 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
+    "date-fns": "^4.1.0",
     "ipfs-http-client": "^60.0.1",
     "localforage": "^1.10.0",
     "lucide-react": "^0.302.0",
     "nostr-tools": "^1.17.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.1"
+    "react-router-dom": "^6.21.1",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.1.5",

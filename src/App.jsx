@@ -1,6 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import MainLayout from './components/layout/MainLayout';
+import { Toaster } from './components/ui/use-toast';
 
 // Páginas
 import HomePage from './pages/HomePage';
@@ -11,63 +14,79 @@ import PostDetailPage from './pages/PostDetailPage';
 import NewPostPage from './pages/NewPostPage';
 import CommunityPage from './pages/CommunityPage';
 import CommunitiesPage from './pages/CommunitiesPage';
+import NewCommunityPage from './pages/NewCommunityPage';
+import EventsPage from './pages/EventsPage';
+import MessagesPage from './pages/MessagesPage';
 
 // Rota protegida que verifica autenticação
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return <div className="p-8 text-center">Carregando...</div>;
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
-  
-  return children;
+  const { user } = useAuth();
+  return user ? children : <Navigate to="/login" />;
 }
 
-// Detectar se está no GitHub Pages ou em desenvolvimento local
-const isGitHubPages = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-// Base URL condicionalmente configurada
-const basename = isGitHubPages ? '/ufrj-social' : '';
+export default function App() {
+  console.log('Renderizando App...');
+  
+  // Determinar a base URL para o GitHub Pages
+  const baseUrl = window.location.hostname === 'chpgo.github.io' ? '/ufrj-social' : '';
 
-function App() {
   return (
-    <AuthProvider>
-      <Router basename={basename}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/post/:id" element={<PostDetailPage />} />
-          <Route path="/community/:slug" element={<CommunityPage />} />
-          <Route path="/communities" element={<CommunitiesPage />} />
-          
-          {/* Rotas protegidas */}
-          <Route 
-            path="/profile" 
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/new-post" 
-            element={
-              <ProtectedRoute>
-                <NewPostPage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Fallback para rotas não encontradas */}
-          <Route path="*" element={<div>Página não encontrada</div>} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Toaster />
+          <Routes>
+            <Route element={<MainLayout />}>
+              <Route path={baseUrl + "/"} element={<HomePage />} />
+              <Route path={baseUrl + "/post/:id"} element={<PostDetailPage />} />
+              <Route path={baseUrl + "/community/:slug"} element={<CommunityPage />} />
+              <Route path={baseUrl + "/communities"} element={<CommunitiesPage />} />
+              <Route path={baseUrl + "/events"} element={<EventsPage />} />
+              <Route path={baseUrl + "/messages"} element={<MessagesPage />} />
+              
+              {/* Rotas protegidas */}
+              <Route 
+                path={baseUrl + "/profile"} 
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path={baseUrl + "/posts/new"} 
+                element={
+                  <ProtectedRoute>
+                    <NewPostPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path={baseUrl + "/communities/new"} 
+                element={
+                  <ProtectedRoute>
+                    <NewCommunityPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Fallback para rotas não encontradas */}
+              <Route path="*" element={
+                <div className="flex min-h-[50vh] items-center justify-center">
+                  <div className="text-center">
+                    <h1 className="text-2xl font-bold mb-2">Página não encontrada</h1>
+                    <p className="text-muted-foreground">A página que você está procurando não existe.</p>
+                  </div>
+                </div>
+              } />
+            </Route>
+            
+            {/* Rotas sem o layout principal */}
+            <Route path={baseUrl + "/login"} element={<LoginPage />} />
+            <Route path={baseUrl + "/register"} element={<RegisterPage />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
-
-export default App;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from '../ui/use-toast';
 
 // Componentes de UI
 import { Button } from '../ui/button';
@@ -14,16 +15,43 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { signIn } = useAuth();
+  const navigate = useNavigate();
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
+    if (!email || !password) {
+      setError('Por favor, preencha todos os campos.');
+      setLoading(false);
+      return;
+    }
+
     try {
       await signIn(email, password);
+      toast({
+        title: "Login realizado com sucesso",
+        description: "Bem-vindo de volta!",
+      });
+      navigate('/');
     } catch (error) {
-      setError(error.message || 'Erro ao fazer login');
+      console.error('Erro no login:', error);
+      
+      // Tratamento de erros específicos
+      if (error.message.includes('Invalid login credentials')) {
+        setError('Email ou senha incorretos. Verifique suas credenciais.');
+      } else if (error.message.includes('Email not confirmed')) {
+        setError('Por favor, confirme seu email antes de fazer login.');
+      } else {
+        setError(error.message || 'Erro ao fazer login. Tente novamente.');
+      }
+      
+      toast({
+        title: "Erro no login",
+        description: "Não foi possível fazer login. Verifique suas credenciais.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
