@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>UFRJ Social</title>
+  <script type="text/javascript">
+    // Código de redirecionamento para Single Page Apps no GitHub Pages
+    // Baseado em https://github.com/rafgraph/spa-github-pages
+    
+    // Este script pega o path atual, transforma em um parâmetro de consulta "p"
+    // e redireciona para a página raiz com esse parâmetro.
+    // Em seguida, o script na página raiz irá usar esse parâmetro
+    // para reconstruir o path original e navegar para ele usando o history API.
+    
+    var pathSegmentsToKeep = 1; // Número de segmentos de caminho na URL depois do domínio
+    
+    var l = window.location;
+    l.replace(
+      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+      l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?p=/' +
+      l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+      (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+      l.hash
+    );
+  </script>
+</head>
+<body>
+  <h1>Redirecionando...</h1>
+  <p>Se você não for redirecionado automaticamente, <a href="/">clique aqui</a>.</p>
+</body>
+</html> 

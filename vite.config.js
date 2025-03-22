@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import path from 'path';
 
 // Detecta se está em modo de produção ou desenvolvimento
 const isProduction = process.env.NODE_ENV === 'production';
@@ -87,7 +88,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': '/src'
+      '@': path.resolve(__dirname, './src'),
     }
   },
   server: {

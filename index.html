@@ -7,6 +7,23 @@
     <meta name="description" content="Plataforma social descentralizada para a comunidade UFRJ" />
     <meta name="theme-color" content="#003366" />
     <title>UFRJ Social</title>
+    
+    <!-- Script de redirecionamento para Single Page Apps no GitHub Pages -->
+    <script type="text/javascript">
+      // Quando o site é carregado pelo GitHub Pages com o parâmetro ?p=URL
+      // Este script transforma o parâmetro de volta para o path correto
+      // usando o history API 
+      (function(l) {
+        if (l.search[1] === '/' ) {
+          var decoded = l.search.slice(1).split('&').map(function(s) { 
+            return s.replace(/~and~/g, '&')
+          }).join('?');
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location))
+    </script>
   </head>
   <body>
     <div id="root"></div>
