@@ -39,4 +39,17 @@ WITH CHECK (user_id = auth.uid());
 CREATE POLICY "Users can leave communities"
 ON public.community_members FOR DELETE
 TO authenticated
-USING (user_id = auth.uid()); 
+USING (user_id = auth.uid());
+
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'events' 
+    AND policyname = 'Events are viewable by everyone'
+  ) THEN
+    CREATE POLICY "Events are viewable by everyone" ON public.events
+      FOR SELECT TO public
+      USING (true);
+  END IF;
+END $$; 

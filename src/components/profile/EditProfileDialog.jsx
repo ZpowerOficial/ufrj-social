@@ -6,6 +6,7 @@ import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
+import { Switch } from '../ui/Switch';
 
 const CURSOS = [
   'Ciência da Computação',
@@ -73,6 +74,7 @@ export default function EditProfileDialog({ open, onOpenChange }) {
     lattes: profile?.lattes || '',
     github: profile?.github || '',
     linkedin: profile?.linkedin || '',
+    is_staff: profile?.is_staff || false,
   });
 
   const handleChange = (field, value) => {
@@ -123,6 +125,23 @@ export default function EditProfileDialog({ open, onOpenChange }) {
                 onChange={(e) => handleChange('avatar_url', e.target.value)}
                 placeholder="https://exemplo.com/seu-avatar.jpg"
               />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="is_staff" className="flex items-center justify-between">
+                <span>Você é funcionário da UFRJ?</span>
+                <Switch 
+                  id="is_staff"
+                  checked={formData.is_staff}
+                  onCheckedChange={(checked) => handleChange('is_staff', checked)}
+                />
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {formData.is_staff 
+                  ? "Seu nome será destacado como funcionário da UFRJ" 
+                  : "Seu perfil será exibido como aluno"
+                }
+              </p>
             </div>
 
             <div className="grid gap-2">

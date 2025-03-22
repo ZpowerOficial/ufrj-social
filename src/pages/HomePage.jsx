@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PlusCircle, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs';
@@ -7,7 +7,10 @@ import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/Skeleton';
 import { toast } from '../components/ui/use-toast';
 import PostCard from '../components/posts/PostCard';
-import { getPosts } from '../lib/api.js';
+import { getPosts, getUserJoinedCommunities } from '../lib/api.js';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/Avatar';
+import { Loader } from 'lucide-react';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -16,9 +19,13 @@ export default function HomePage() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('recent');
   const [refreshing, setRefreshing] = useState(false);
+  const navigate = useNavigate();
+  const [communities, setCommunities] = useState([]);
+  const [loadingCommunities, setLoadingCommunities] = useState(true);
 
   useEffect(() => {
     fetchPosts();
+    fetchCommunities();
   }, []);
 
   const fetchPosts = async () => {
@@ -79,100 +86,146 @@ export default function HomePage() {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Feed</h1>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={handleRefresh}
-            disabled={loading}
-            title="Atualizar posts"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            <span className="sr-only">Atualizar</span>
-          </Button>
-          
-          {user && (
-            <Button asChild className="gap-2">
-              <Link to="/posts/new">
-                <span className="flex items-center gap-2">
-                  <PlusCircle className="h-4 w-4" />
-                  Novo Post
-                </span>
-              </Link>
-            </Button>
-          )}
-        </div>
-      </div>
+  const fetchCommunities = async () => {
+    if (user) {
+      try {
+        setLoadingCommunities(true);
+        const userCommunities = await getUserJoinedCommunities(user.id);
+        setCommunities(userCommunities);
+      } catch (error) {
+        console.error("Erro ao carregar comunidades:", error);
+      } finally {
+        setLoadingCommunities(false);
+      }
+    }
+  };
 
-      <Tabs 
-        value={activeTab} 
-        onValueChange={handleTabChange} 
-        className="space-y-4"
-      >
-        <div className="border-b">
-          <TabsList className="w-full justify-start rounded-none bg-transparent p-0">
-            <TabsTrigger
-              value="recent"
-              className="relative rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground"
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-5xl">
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="md:w-2/3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold tracking-tight">Feed</h1>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={handleRefresh}
+                disabled={loading}
+                title="Atualizar posts"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span className="sr-only">Atualizar</span>
+              </Button>
+              
+              {user && (
+                <Button asChild className="gap-2">
+                  <Link to="/posts/new">
+                    <span className="flex items-center gap-2">
+                      <PlusCircle className="h-4 w-4" />
+                      Novo Post
+                    </span>
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-md">
+            <Button
+              variant={activeTab === "recent" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => handleTabChange("recent")}
+              className="flex-1"
             >
               Recentes
-            </TabsTrigger>
-            <TabsTrigger
-              value="popular"
-              className="relative rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground"
+            </Button>
+            <Button
+              variant={activeTab === "popular" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => handleTabChange("popular")}
+              className="flex-1"
             >
               Populares
-            </TabsTrigger>
+            </Button>
             {user && (
-              <TabsTrigger
-                value="following"
-                className="relative rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground"
+              <Button
+                variant={activeTab === "following" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => handleTabChange("following")}
+                className="flex-1"
               >
                 Seguindo
-              </TabsTrigger>
+              </Button>
             )}
-          </TabsList>
+          </div>
+
+          {renderContent()}
         </div>
 
-        <TabsContent value="recent" className="space-y-4 min-h-[200px]">
-          {renderContent()}
-        </TabsContent>
-        <TabsContent value="popular" className="space-y-4 min-h-[200px]">
-          {renderContent()}
-        </TabsContent>
-        {user && (
-          <TabsContent value="following" className="space-y-4 min-h-[200px]">
-            {renderContent()}
-          </TabsContent>
-        )}
-      </Tabs>
+        <div className="md:w-1/3 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Minhas Comunidades</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingCommunities ? (
+                <div className="flex justify-center py-4">
+                  <Loader className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : communities.length > 0 ? (
+                <div className="space-y-3">
+                  {communities.slice(0, 5).map((community) => (
+                    <div 
+                      key={community.id} 
+                      className="flex items-center gap-3 cursor-pointer hover:bg-muted p-2 rounded-md"
+                      onClick={() => navigate(`/community/${community.slug}`)}
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>{community.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="overflow-hidden">
+                        <p className="text-sm font-medium truncate">{community.name}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {communities.length > 5 && (
+                    <Button 
+                      variant="link" 
+                      className="w-full text-xs text-muted-foreground"
+                      onClick={() => navigate('/communities')}
+                    >
+                      Ver todas ({communities.length})
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Você ainda não participa de nenhuma comunidade
+                  </p>
+                  <Button 
+                    size="sm"
+                    onClick={() => navigate('/communities')}
+                  >
+                    Explorar comunidades
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 
   function renderContent() {
     if (loading) {
-      return Array(3).fill(0).map((_, i) => (
-        <div key={i} className="space-y-3 rounded-lg border p-4">
-          <div className="flex items-center space-x-4">
-            <Skeleton className="h-12 w-12 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-[250px]" />
-              <Skeleton className="h-4 w-[200px]" />
-            </div>
-          </div>
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-          <div className="flex pt-4">
-            <Skeleton className="h-8 w-20 rounded-full" />
-            <Skeleton className="h-8 w-20 rounded-full ml-2" />
-          </div>
+      return (
+        <div className="flex justify-center items-center py-10">
+          <Loader className="h-10 w-10 animate-spin text-primary" />
         </div>
-      ));
+      );
     }
 
     if (error) {

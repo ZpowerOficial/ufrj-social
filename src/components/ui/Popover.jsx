@@ -1,84 +1,45 @@
-import React, { useState, useEffect, useRef } from "react";
+import * as React from "react";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
+
 import { cn } from "../../lib/utils";
 
-const PopoverContext = React.createContext({});
+const Popover = PopoverPrimitive.Root;
 
-const Popover = ({ children }) => {
-  const [open, setOpen] = useState(false);
+const PopoverTrigger = React.forwardRef(({ className, asChild = false, children, ...props }, ref) => {
+  if (asChild) {
+    return (
+      <PopoverPrimitive.Trigger ref={ref} className={className} asChild {...props}>
+        {children}
+      </PopoverPrimitive.Trigger>
+    );
+  }
   
   return (
-    <PopoverContext.Provider value={{ open, setOpen }}>
-      {children}
-    </PopoverContext.Provider>
-  );
-};
-
-const PopoverTrigger = React.forwardRef(({ className, asChild = false, ...props }, ref) => {
-  const { open, setOpen } = React.useContext(PopoverContext);
-
-  return (
-    <button
+    <PopoverPrimitive.Trigger
       ref={ref}
-      className={cn("inline-flex items-center justify-center", className)}
-      onClick={() => setOpen(!open)}
+      className={cn("", className)}
       {...props}
-    />
+    >
+      {children}
+    </PopoverPrimitive.Trigger>
   );
 });
-PopoverTrigger.displayName = "PopoverTrigger";
+PopoverTrigger.displayName = PopoverPrimitive.Trigger.displayName;
 
-const PopoverContent = React.forwardRef(({ className, sideOffset = 4, align = "center", side = "bottom", ...props }, ref) => {
-  const { open, setOpen } = React.useContext(PopoverContext);
-  const popoverRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-
-    if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [open, setOpen]);
-
-  if (!open) return null;
-
-  return (
-    <div
-      ref={(node) => {
-        // Use ambas as refs
-        if (typeof ref === "function") ref(node);
-        popoverRef.current = node;
-      }}
+const PopoverContent = React.forwardRef(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+  <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Content
+      ref={ref}
+      align={align}
+      sideOffset={sideOffset}
       className={cn(
-        "z-50 overflow-hidden rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none animate-in",
-        side === "bottom" && "data-[side=bottom]:slide-in-from-top-2",
-        side === "top" && "data-[side=top]:slide-in-from-bottom-2",
-        side === "left" && "data-[side=left]:slide-in-from-right-2",
-        side === "right" && "data-[side=right]:slide-in-from-left-2",
-        align === "start" && "data-[align=start]:start-0",
-        align === "center" && "data-[align=center]:left-1/2 data-[align=center]:-translate-x-1/2",
-        align === "end" && "data-[align=end]:end-0",
+        "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
         className
       )}
-      style={{
-        position: "absolute",
-        [side]: "100%",
-        marginTop: side === "bottom" ? sideOffset : 0,
-        marginBottom: side === "top" ? sideOffset : 0,
-        marginLeft: side === "right" ? sideOffset : 0,
-        marginRight: side === "left" ? sideOffset : 0,
-      }}
       {...props}
     />
-  );
-});
-PopoverContent.displayName = "PopoverContent";
+  </PopoverPrimitive.Portal>
+));
+PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
 export { Popover, PopoverTrigger, PopoverContent }; 

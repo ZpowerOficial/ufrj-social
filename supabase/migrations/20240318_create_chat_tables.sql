@@ -14,6 +14,12 @@ CREATE TABLE IF NOT EXISTS public.conversation_participants (
   PRIMARY KEY (conversation_id, user_id)
 );
 
+-- Adicionar relacionamento explícito entre conversation_participants e profiles
+ALTER TABLE public.conversation_participants 
+  ADD CONSTRAINT fk_conversation_participants_profiles 
+  FOREIGN KEY (user_id) 
+  REFERENCES public.profiles(id);
+
 -- Create messages table
 CREATE TABLE IF NOT EXISTS public.messages (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

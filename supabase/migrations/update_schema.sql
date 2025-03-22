@@ -2,15 +2,35 @@
 
 -- Atualizar tabela de perfis
 ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS username TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS username TEXT,
   ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS karma INTEGER DEFAULT 0,
   ADD COLUMN IF NOT EXISTS is_staff BOOLEAN DEFAULT FALSE;
 
+-- Adicionar uniqueness ao username se não existir
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'profiles_username_key'
+  ) THEN
+    ALTER TABLE public.profiles ADD CONSTRAINT profiles_username_key UNIQUE (username);
+  END IF;
+END $$;
+
 -- Atualizar tabela de comunidades
 ALTER TABLE public.communities
   ADD COLUMN IF NOT EXISTS rules TEXT,
-  ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES profiles(id);
+  ADD COLUMN IF NOT EXISTS created_by UUID;
+
+-- Adicionar referência para profiles se não existir
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'communities_created_by_fkey'
+  ) THEN
+    ALTER TABLE public.communities ADD CONSTRAINT communities_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id);
+  END IF;
+END $$;
 
 -- Criar tabela de posts se não existir
 CREATE TABLE IF NOT EXISTS public.posts (
@@ -62,11 +82,18 @@ CREATE TABLE IF NOT EXISTS public.event_participants (
   PRIMARY KEY (event_id, user_id)
 );
 
--- Adicionar relacionamento entre conversation_participants e profiles
-ALTER TABLE public.conversation_participants 
-  ADD CONSTRAINT IF NOT EXISTS fk_conversation_participants_profiles 
-  FOREIGN KEY (user_id) 
-  REFERENCES public.profiles(id);
+-- Verificar e adicionar o relacionamento entre conversation_participants e profiles
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_conversation_participants_profiles'
+  ) THEN
+    ALTER TABLE public.conversation_participants 
+      ADD CONSTRAINT fk_conversation_participants_profiles 
+      FOREIGN KEY (user_id) 
+      REFERENCES public.profiles(id);
+  END IF;
+END $$;
 
 -- Habilitar RLS para novas tabelas
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
@@ -328,4 +355,29 @@ CREATE INDEX IF NOT EXISTS idx_comments_author_id ON public.comments(author_id);
 CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON public.comments(parent_id);
 CREATE INDEX IF NOT EXISTS idx_events_community_id ON public.events(community_id);
 CREATE INDEX IF NOT EXISTS idx_events_creator_id ON public.events(creator_id);
-CREATE INDEX IF NOT EXISTS idx_events_event_date ON public.events(event_date); 
+CREATE INDEX IF NOT EXISTS idx_events_event_date ON public.events(event_date);
+
+-- Funções de contagem de membros da comunidade
+CREATE OR REPLACE FUNCTION decrement_community_members(community_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE public.communities
+  SET member_count = GREATEST(member_count - 1, 0)
+  WHERE id = community_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION increment_community_members(community_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE public.communities
+  SET member_count = member_count + 1
+  WHERE id = community_id;
+END;
+$$; 

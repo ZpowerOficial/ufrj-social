@@ -209,9 +209,6 @@ export const joinCommunity = async (communityId) => {
 
     if (error) throw error;
 
-    // Increment member count
-    await supabase.rpc('increment_community_members', { community_id: communityId });
-
     return true;
   } catch (error) {
     console.error('Error joining community:', error);
@@ -238,9 +235,6 @@ export const leaveCommunity = async (communityId) => {
       });
 
     if (error) throw error;
-
-    // Decrement member count
-    await supabase.rpc('decrement_community_members', { community_id: communityId });
 
     return true;
   } catch (error) {
@@ -484,3 +478,480 @@ const createUFRJGeneralCommunity = async () => {
 
   return data;
 };
+
+/**
+ * Get communities that user has joined
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} - Array of communities
+ */
+export const getUserJoinedCommunities = async (userId) => {
+  try {
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      userId = user.id;
+    }
+
+    const { data, error } = await supabase
+      .from('community_members')
+      .select(`
+        community_id,
+        communities (
+          id, 
+          name, 
+          slug, 
+          description
+        )
+      `)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    // Reformat data para retornar apenas os objetos de comunidade
+    return data.map(item => item.communities);
+  } catch (error) {
+    console.error('Error fetching user joined communities:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a post
+ * @param {string} postId - Post ID
+ * @returns {Promise<boolean>} - Success status
+ */
+export const deletePost = async (postId) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verificar se é o autor do post
+    const { data: post, error: fetchError } = await supabase
+      .from('posts')
+      .select('author_id')
+      .eq('id', postId)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    if (post.author_id !== user.id) {
+      throw new Error('Você não tem permissão para excluir este post');
+    }
+
+    // Excluir o post
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', postId);
+
+    if (error) throw error;
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add a comment to a post
+ * @param {Object} commentData - Comment data
+ * @param {string} commentData.post_id - Post ID
+ * @param {string} commentData.content - Comment content
+ * @param {string} commentData.parent_id - Parent comment ID (optional)
+ * @returns {Promise<Object>} - Created comment
+ */
+export const addComment = async (commentData) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { post_id, content, parent_id } = commentData;
+    
+    if (!post_id || !content) {
+      throw new Error('Post ID e conteúdo são obrigatórios');
+    }
+
+    const comment = {
+      post_id,
+      content,
+      author_id: user.id,
+      ...(parent_id && { parent_id }),
+    };
+
+    const { data, error } = await supabase
+      .from('comments')
+      .insert(comment)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return data;
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get comments for a post
+ * @param {string} postId - Post ID
+ * @returns {Promise<Array>} - Array of comments
+ */
+export const getComments = async (postId) => {
+  try {
+    const { data, error } = await supabase
+      .from('comments')
+      .select(`
+        *,
+        author:profiles!author_id(id, display_name, avatar_url, username),
+        replies:comments(
+          id,
+          content,
+          created_at,
+          author:profiles!author_id(id, display_name, avatar_url, username),
+          upvotes,
+          downvotes
+        )
+      `)
+      .eq('post_id', postId)
+      .is('parent_id', null)
+      .order('created_at', { ascending: true });
+      
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    return [];
+  }
+};
+
+// Funções para eventos
+export async function createEvent({ title, description, communityId, eventDate, location, isOnline, eventLink }) {
+  try {
+    const user = await getUser();
+    if (!user) throw new Error("Não autenticado");
+
+    const { data, error } = await supabase
+      .from("events")
+      .insert({
+        title,
+        description,
+        community_id: communityId,
+        creator_id: user.id,
+        event_date: eventDate,
+        location,
+        is_online: isOnline,
+        event_link: eventLink,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Erro ao criar evento:", error);
+    throw error;
+  }
+}
+
+export async function getEvents({ filter = "upcoming" } = {}) {
+  try {
+    const today = new Date().toISOString();
+    
+    let query = supabase
+      .from("events")
+      .select(`
+        *,
+        creator:creator_id(id, display_name, avatar_url),
+        community:community_id(id, name, slug)
+      `);
+
+    if (filter === "upcoming") {
+      query = query.gte("event_date", today);
+    } else if (filter === "past") {
+      query = query.lt("event_date", today);
+    }
+    
+    query = query.order(filter === "upcoming" ? "event_date" : "event_date.desc");
+    
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Erro ao buscar eventos:", error);
+    throw error;
+  }
+}
+
+export async function getCommunityEvents(communityId, { filter = "upcoming" } = {}) {
+  try {
+    const today = new Date().toISOString();
+    
+    let query = supabase
+      .from("events")
+      .select(`
+        *,
+        creator:creator_id(id, display_name, avatar_url),
+        community:community_id(id, name, slug)
+      `)
+      .eq("community_id", communityId);
+
+    if (filter === "upcoming") {
+      query = query.gte("event_date", today);
+    } else if (filter === "past") {
+      query = query.lt("event_date", today);
+    }
+    
+    query = query.order(filter === "upcoming" ? "event_date" : "event_date.desc");
+    
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Erro ao buscar eventos da comunidade:", error);
+    throw error;
+  }
+}
+
+export async function getEvent(eventId) {
+  try {
+    const { data, error } = await supabase
+      .from("events")
+      .select(`
+        *,
+        creator:creator_id(id, display_name, avatar_url),
+        community:community_id(id, name, slug),
+        participants:event_participants(
+          user_id,
+          status,
+          user:user_id(id, display_name, avatar_url)
+        )
+      `)
+      .eq("id", eventId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Erro ao buscar evento:", error);
+    throw error;
+  }
+}
+
+export async function participateInEvent(eventId, status = "going") {
+  try {
+    const user = await getUser();
+    if (!user) throw new Error("Não autenticado");
+
+    const { data, error } = await supabase
+      .from("event_participants")
+      .upsert(
+        {
+          event_id: eventId,
+          user_id: user.id,
+          status,
+        },
+        { onConflict: "event_id,user_id" }
+      )
+      .select();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Erro ao participar do evento:", error);
+    throw error;
+  }
+}
+
+export async function removeEventParticipation(eventId) {
+  try {
+    const user = await getUser();
+    if (!user) throw new Error("Não autenticado");
+
+    const { error } = await supabase
+      .from("event_participants")
+      .delete()
+      .eq("event_id", eventId)
+      .eq("user_id", user.id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Erro ao remover participação:", error);
+    throw error;
+  }
+}
+
+// Funções para comentários
+export async function createComment(postId, content, parentId = null) {
+  try {
+    const user = await getUser();
+    if (!user) throw new Error("Não autenticado");
+
+    const { data, error } = await supabase
+      .from("comments")
+      .insert({
+        post_id: postId,
+        author_id: user.id,
+        content,
+        parent_id: parentId,
+      })
+      .select(`
+        *,
+        author:author_id(id, display_name, avatar_url)
+      `)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Erro ao criar comentário:", error);
+    throw error;
+  }
+}
+
+export async function getPostComments(postId) {
+  try {
+    const { data, error } = await supabase
+      .from("comments")
+      .select(`
+        *,
+        author:author_id(id, display_name, avatar_url),
+        replies:comments!parent_id(
+          *,
+          author:author_id(id, display_name, avatar_url)
+        )
+      `)
+      .eq("post_id", postId)
+      .is("parent_id", null)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Erro ao buscar comentários:", error);
+    throw error;
+  }
+}
+
+export async function updateComment(commentId, content) {
+  try {
+    const user = await getUser();
+    if (!user) throw new Error("Não autenticado");
+
+    const { data, error } = await supabase
+      .from("comments")
+      .update({ content })
+      .eq("id", commentId)
+      .eq("author_id", user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Erro ao atualizar comentário:", error);
+    throw error;
+  }
+}
+
+export async function deleteComment(commentId) {
+  try {
+    const user = await getUser();
+    if (!user) throw new Error("Não autenticado");
+
+    const { error } = await supabase
+      .from("comments")
+      .delete()
+      .eq("id", commentId)
+      .eq("author_id", user.id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Erro ao deletar comentário:", error);
+    throw error;
+  }
+}
+
+// Função de pesquisa global
+export async function searchContent(query, options = {}) {
+  try {
+    const { type = "all", limit = 20 } = options;
+    
+    if (!query) return { posts: [], communities: [], users: [], events: [] };
+    
+    const searchTerm = `%${query}%`;
+    
+    const results = {};
+    
+    // Buscar posts
+    if (type === "all" || type === "posts") {
+      const { data: posts, error: postsError } = await supabase
+        .from("posts")
+        .select(`
+          *,
+          author:author_id(id, display_name, avatar_url),
+          community:community_id(id, name, slug)
+        `)
+        .or(`title.ilike.${searchTerm},content.ilike.${searchTerm}`)
+        .limit(limit);
+        
+      if (postsError) throw postsError;
+      results.posts = posts;
+    }
+    
+    // Buscar comunidades
+    if (type === "all" || type === "communities") {
+      const { data: communities, error: communitiesError } = await supabase
+        .from("communities")
+        .select(`
+          *,
+          creator:created_by(id, display_name)
+        `)
+        .or(`name.ilike.${searchTerm},description.ilike.${searchTerm}`)
+        .limit(limit);
+        
+      if (communitiesError) throw communitiesError;
+      results.communities = communities;
+    }
+    
+    // Buscar usuários
+    if (type === "all" || type === "users") {
+      const { data: users, error: usersError } = await supabase
+        .from("profiles")
+        .select(`*`)
+        .or(`display_name.ilike.${searchTerm},username.ilike.${searchTerm}`)
+        .limit(limit);
+        
+      if (usersError) throw usersError;
+      results.users = users;
+    }
+    
+    // Buscar eventos
+    if (type === "all" || type === "events") {
+      const { data: events, error: eventsError } = await supabase
+        .from("events")
+        .select(`
+          *,
+          creator:creator_id(id, display_name),
+          community:community_id(id, name, slug)
+        `)
+        .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},location.ilike.${searchTerm}`)
+        .limit(limit);
+        
+      if (eventsError) throw eventsError;
+      results.events = events;
+    }
+    
+    return results;
+  } catch (error) {
+    console.error("Erro na pesquisa:", error);
+    throw error;
+  }
+}

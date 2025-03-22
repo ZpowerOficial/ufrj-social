@@ -216,10 +216,10 @@ export default function CommunityPage() {
             <div>
               <CardTitle className="text-2xl">{community.name}</CardTitle>
               <CardDescription className="flex flex-wrap gap-2 items-center mt-1">
-                <div className="flex items-center gap-1">
+                <span className="flex items-center gap-1">
                   <Users className="h-3.5 w-3.5" />
                   <span>{community.member_count || 0} membros</span>
-                </div>
+                </span>
                 <span>•</span>
                 <span className="text-xs">
                   Criada {formatDistanceToNow(new Date(community.created_at), { addSuffix: true, locale: ptBR })}

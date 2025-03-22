@@ -6,11 +6,11 @@ import { toast } from '../components/ui/use-toast';
 
 // Componentes UI modernos
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/Input';
+import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/Textarea';
 import { Select } from '../components/ui/Select';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
-import { Label } from '../components/ui/Label';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
